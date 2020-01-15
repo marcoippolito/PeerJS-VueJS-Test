@@ -1,21 +1,22 @@
 <template>
   <div>
-    <p>My Peer Id : {{ myPeerId }}</p>
+    <p>My Peer Id : {{ this.myPeer.id }}</p>
+    <hr>
     <p>Remote Peer Id
       <input v-model="remotePeerId">
+      <button @click="connect()">Connect</button>
     </p>
-    <p button @click="connect()">Connect to my friend!</p>
-    <form>
-      <label>Message To Send:</label>
-      <input v-model="message" type="text">
-    </form>
-    <p button @click="sendMessage()">Send Message!</p>
+    <hr>
+    <p>Message to send
+      <input v-model="message">
+      <button @click="sendMessage()">Send</button>
     <hr>
     <div class="col-xs-12 col-sm-6">
+      <h3>Messages Flow:</h3>
       <ul class="list-group">
-        <li class="list-group-item" v-for="message in messages">Message: {{ message }}</li>      
+        <li class="list-group-item" v-for="message in messages">Message: {{ message }}</li>
       </ul>
-    </div> 
+    </div>
   </div>
 </template>
 
@@ -25,7 +26,6 @@
     export default {
       data: () => ({
         connection: null,
-        connecting: true,
         message: '',
         messages: [],
         myPeer: null,
@@ -33,14 +33,13 @@
         remotePeerId: ''
       }),
       created() {
-        this.myPeerId = (Math.random() * 6 + Math.random()).toString(36).replace('.', '');
-        this.myPeer = new Peer({ key: 'lwjd5qra8257b9' })
-        this.myPeer.on('open', id => {
-          console.log('Connected at PeerJS server with success')
-          this.myPeerId = id;
-          this.connecting = false
+        this.myPeer = new Peer()
+        this.myPeer.on('open', (id) => {
+          console.log('this.myPeer.id: ' + this.myPeer.id + ' this.myPeer.key: ' + this.myPeer.key)
         })
+        // Receive messages
         this.myPeer.on('connection', con => {
+          console.log("Receiving messages from peer")
           this.connection = con
           con.on('open', () => {
             con.on('data', newMessage => this.messages.push(newMessage))
@@ -51,12 +50,12 @@
       },
       methods: {
         connect() {
-          if (this.remotePeerId.trim().length) {
-            this.connection = this.myPeer.connect(this.remotePeerId)
-            this.connection.on('open', () => {
-              this.connection.on('data', newMessage => this.messages.push(newMessage))
-            })
-          }
+          this.connection = this.myPeer.connect(this.remotePeerId)
+          console.log('Now connected: ', this.connection)
+          // Receive messages:
+          this.connection.on('open', () => {
+            this.connection.on('data', newMessage => this.messages.push(newMessage))
+          });
         },
         sendMessage() {
           const newMessage = {
